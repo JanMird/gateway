@@ -19,6 +19,7 @@ type GRPCClient interface {
 }
 
 type grpcBookingClient struct {
+	pb.UnimplementedBookingServiceServer
 	client  pb.BookingServiceClient
 	timeout time.Duration
 }
