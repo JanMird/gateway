@@ -19,14 +19,13 @@ type GRPCClient interface {
 }
 
 type grpcBookingClient struct {
-	pb.UnimplementedBookingServiceServer
 	client  pb.BookingServiceClient
 	timeout time.Duration
 }
 
 func NewGRPCBookingClient(client GRPCClient, timeout time.Duration) *grpcBookingClient {
 	return &grpcBookingClient{
-		client:   pb.NewBookingServiceClient(client),
+		client:  pb.NewBookingServiceClient(client),
 		timeout: timeout,
 	}
 }
@@ -41,16 +40,11 @@ func (c *grpcBookingClient) CreateBooking(ctx context.Context, req *domain.Booki
 		BookingType: req.BookingType,
 		StartTime:   timestamppb.New(req.StartTime),
 		EndTime:     timestamppb.New(req.EndTime),
+		TrainerId:   req.TrainerID,
+		LessonId:    req.LessonID,
 		Status:      req.Status,
 		Amount:      req.Amount,
 		Currency:    req.Currency,
-	}
-
-	if req.TrainerID != nil {
-		protoReq.TrainerId = req.TrainerID
-	}
-	if req.LessonID != nil {
-		protoReq.LessonId = req.LessonID
 	}
 
 	protoReq.EquipmentItems = make([]*booking.EquipmentItem, len(req.EquipmentItems))
