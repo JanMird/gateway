@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package auth;
+option go_package = "gen/auth";
+
+import "google/protobuf/empty.proto";
+
+service AuthService {
+    rpc Authenticate(AuthenticateRequest) returns (AuthenticateRespone);
+    rpc SignUp(SignUpRequest) returns (SignUpResponse);
+    rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+    rpc GetClaimsFromToken(GetClaimsFromTokenRequest) returns (GetClaimsFromTokenResponse);
+    rpc SignOut(SignOutRequest) returns (google.protobuf.Empty);
+}
+
+message AuthenticateRequest {
+    string password = 1;
+    optional string email = 2;
+    optional string phone = 3;
+}
+
+message AuthenticateRespone {
+    string access_token = 1;
+    string refresh_token = 2;
+}
+
+message SignUpRequest {
+    string password = 1;
+    optional string email = 2;
+    optional string phone = 3;
+}
+
+message SignUpResponse {
+    string access_token = 1;
+    string refresh_token = 2;
+}
+
+message RefreshTokenRequest {
+    string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+    string access_token = 1;
+    string refresh_token = 2;
+}
+
+message GetClaimsFromTokenRequest {
+    string access_token = 1;
+}
+
+message GetClaimsFromTokenResponse {
+    string id = 1;
+    Role role = 2;
+}
+
+enum Role {
+  blank = 0;
+  admin = 1;
+  user = 2;
+}
+
+message SignOutRequest {
+    string token = 1;
+}

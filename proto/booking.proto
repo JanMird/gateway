@@ -10,7 +10,7 @@ service BookingService {
 }
 
 message CreateBookingRequest {
-  int64 admin_id = 1;
+  int32 role = 1;
   int64 client_id = 2;
   int32 booking_type = 3;
   google.protobuf.Timestamp start_time = 4;
