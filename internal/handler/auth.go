@@ -53,10 +53,21 @@ func (h *authHandler) Authenticate(ctx *gin.Context) {
 	if err != nil {
 		h.logger.Error("Authentication failed:", err)
 
-		switch {
-		default:
+		if status, ok := status.FromError(err); ok {
+			switch status.Code() {
+			case codes.DeadlineExceeded:
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"error": "Authentication failed"})
+			case codes.NotFound:
+				ctx.AbortWithStatusJSON(http.StatusNoContent, gin.H{"error": "user not found"})
+			case codes.DataLoss:
+				ctx.AbortWithStatusJSON(http.StatusCreated, gin.H{"error": "token creation failed"})
+			default:
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Authentication failed"})
+			}
+		} else {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Authentication failed"})
 		}
+
 		return
 	}
 
@@ -88,13 +99,21 @@ func (h *authHandler) SignUp(ctx *gin.Context) {
 	accessToken, refreshToken, err := h.service.SignUp(ctxx, req)
 	if err != nil {
 		h.logger.Error("SignUp failed:", err)
-		st, ok := status.FromError(err)
-		switch {
-		case ok && st.Code() == codes.DataLoss:
-			ctx.AbortWithStatusJSON(http.StatusCreated, gin.H{"error": err.Error()})
-		default:
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})
+		if status, ok := status.FromError(err); ok {
+			switch status.Code() {
+			case codes.DeadlineExceeded:
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"error": "SignUp failed"})
+			case codes.AlreadyExists:
+				ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "user already exists"})
+			case codes.DataLoss:
+				ctx.AbortWithStatusJSON(http.StatusCreated, gin.H{"error": "token creation failed"})
+			default:
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Authentication failed"})
+			}
+		} else {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Authentication failed"})
 		}
+
 		return
 	}
 
@@ -121,11 +140,16 @@ func (h *authHandler) RefreshToken(ctx *gin.Context) {
 	accessToken, refreshToken, err := h.service.RefreshToken(ctxx, req.RefreshToken)
 	if err != nil {
 		h.logger.Error("Refresh token failed:", err)
-
-		switch {
-		default:
+		if status, ok := status.FromError(err); ok {
+			if status.Code() == codes.DeadlineExceeded {
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"error": "RefreshToken failed"})
+			} else {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Token refresh failed"})
+			}
+		} else {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Token refresh failed"})
 		}
+
 		return
 	}
 
@@ -154,11 +178,16 @@ func (h *authHandler) SignOut(ctx *gin.Context) {
 	err := h.service.SignOut(ctxx, token)
 	if err != nil {
 		h.logger.Error("SignOut failed:", err)
-
-		switch {
-		default:
+		if status, ok := status.FromError(err); ok {
+			if status.Code() == codes.DeadlineExceeded {
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"error": "SignOut failed"})
+			} else {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Sign out failed"})
+			}
+		} else {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Sign out failed"})
 		}
+
 		return
 	}
 
@@ -182,6 +211,23 @@ func (h *authHandler) GetUserInfo(ctx *gin.Context) {
 	token := authHeader[7:]
 
 	claims, err := h.service.GetClaimsFromToken(ctxx, token)
+	if err != nil {
+		h.logger.Error("Get user info failed:", err)
+		if status, ok := status.FromError(err); ok {
+			switch status.Code() {
+			case codes.DeadlineExceeded:
+				ctx.AbortWithStatusJSON(http.StatusGatewayTimeout, gin.H{"error": "GetUserInfo failed"})
+			case codes.Unauthenticated:
+				ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{"error": "token is expired"})
+			default:
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "GetUserInfo failed"})
+			}
+		} else {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "GetUserInfo failed"})
+		}
+
+		return
+	}
 	if err != nil {
 		h.logger.Error("Get user info failed:", err)
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})

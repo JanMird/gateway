@@ -46,6 +46,10 @@ func (c *grpcAuthClient) Authenticate(ctx context.Context, u domain.UserUnsafe) 
 			switch status.Code() {
 			case codes.DeadlineExceeded:
 				return "", "", fmt.Errorf("authentication timeout: %v", err)
+			case codes.NotFound:
+				return "", "", fmt.Errorf("user not found: %w", err)
+			case codes.DataLoss:
+				return "", "", fmt.Errorf("user created, token failed: %w", err)
 			default:
 				return "", "", fmt.Errorf("gRPC error (%s): %v", status.Code().String(), status.Message())
 			}
@@ -133,13 +137,11 @@ func (c *grpcAuthClient) RefreshToken(ctx context.Context, token string) (string
 	resp, err := c.client.RefreshToken(ctx, req)
 	if err != nil {
 		if status, ok := status.FromError(err); ok {
-			switch status.Code() {
-			case codes.DeadlineExceeded:
+			if status.Code() == codes.DeadlineExceeded {
 				return "", "", fmt.Errorf("refresh token timeout: %v", err)
-			default:
-				return "", "", fmt.Errorf("refresh failed (%s): %v", status.Code().String(), status.Message())
 			}
 		}
+
 		return "", "", fmt.Errorf("refresh token failed: %v", err)
 	}
 
@@ -171,12 +173,14 @@ func (c *grpcAuthClient) GetClaimsFromToken(ctx context.Context, token string) (
 		if status, ok := status.FromError(err); ok {
 			switch status.Code() {
 			case codes.DeadlineExceeded:
-				return domain.Claims{}, fmt.Errorf("token validation timeout: %v", err)
+				return domain.Claims{}, fmt.Errorf("token validation timeout: %w", err)
+			case codes.Unauthenticated:
+				return domain.Claims{}, fmt.Errorf("token is expired: %w", err)
 			default:
 				return domain.Claims{}, fmt.Errorf("token validation failed (%s): %v", status.Code().String(), status.Message())
 			}
 		}
-		return domain.Claims{}, fmt.Errorf("token validation failed: %v", err)
+		return domain.Claims{}, fmt.Errorf("token validation failed: %w", err)
 	}
 
 	if resp == nil {
@@ -219,13 +223,11 @@ func (c *grpcAuthClient) SignOut(ctx context.Context, token string) error {
 	_, err := c.client.SignOut(ctx, req)
 	if err != nil {
 		if status, ok := status.FromError(err); ok {
-			switch status.Code() {
-			case codes.DeadlineExceeded:
+			if status.Code() == codes.DeadlineExceeded {
 				return fmt.Errorf("sign out timeout: %v", err)
-			default:
-				return fmt.Errorf("sign out failed (%s): %v", status.Code().String(), status.Message())
 			}
 		}
+
 		return fmt.Errorf("sign out failed: %v", err)
 	}
 

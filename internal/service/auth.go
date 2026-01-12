@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/JanMird/gateway/internal/domain"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type AuthClient interface {
@@ -94,13 +92,7 @@ func (s *authService) SignUp(ctx context.Context, u domain.UserUnsafe) (string, 
 	accessToken, refreshToken, err := s.client.SignUp(ctx, u)
 	if err != nil {
 		s.logError("signup failed", err)
-		st, ok := status.FromError(err)
-		switch {
-		case ok && st.Code() == codes.DataLoss:
-			return "", "", fmt.Errorf("failed to create token, user is created: %w", err)
-		default:
-			return "", "", fmt.Errorf("registration failed: %w", err)
-		}
+		return "", "", fmt.Errorf("sign up failed: %w", err)
 	}
 
 	s.logDebug("user registered", "email", u.Email, "phone", u.Phone, "role", u.Role)

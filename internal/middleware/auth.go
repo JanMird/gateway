@@ -56,7 +56,6 @@ func AuthMiddleware(authService AuthService, requiredRole ...int) gin.HandlerFun
 
 		ctx.Set("user_id", claims.Sub)
 		ctx.Set("user_role", claims.Role)
-		ctx.Set("access_token", token)
 
 		ctx.Next()
 	}
