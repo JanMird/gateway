@@ -2,6 +2,6 @@ package domain
 
 import "time"
 
-const (
-	GRPCTimeout time.Duration = 1000000000
+var (
+	GRPCTimeout time.Duration = 10 * time.Second
 )

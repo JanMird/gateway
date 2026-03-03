@@ -35,7 +35,7 @@ func (c *grpcBookingClient) CreateBooking(ctx context.Context, req *domain.Booki
 	defer cancel()
 
 	protoReq := &pb.CreateBookingRequest{
-		AdminId:     req.AdminID,
+		Role:        req.Role,
 		ClientId:    req.ClientID,
 		BookingType: req.BookingType,
 		StartTime:   timestamppb.New(req.StartTime),

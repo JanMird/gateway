@@ -24,7 +24,7 @@ func NewBookingService(client BookingClient) *bookingService {
 func (s *bookingService) CreateBooking(ctx context.Context, req *domain.Booking) (int, error) {
 	res, err := s.client.CreateBooking(ctx, req)
 	if err != nil {
-		return -1, fmt.Errorf("CreateBookingInternal: %w", err)
+		return -1, fmt.Errorf("Create booking error: %w", err)
 	}
 
 	return res, nil

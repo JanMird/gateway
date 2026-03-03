@@ -39,6 +39,9 @@ func (h *handler) CreateBooking(ctx *gin.Context) {
 		return
 	}
 
+	req.ClientID = int64(ctx.GetInt("user_id"))
+	req.Role = int32(ctx.GetInt("user_role"))
+
 	resp, err := h.service.CreateBooking(ctxx, &req)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
